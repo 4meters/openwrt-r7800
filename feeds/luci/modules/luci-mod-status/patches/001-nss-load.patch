@@ -1,6 +1,6 @@
 --- a/htdocs/luci-static/resources/view/status/include/10_system.js
 +++ b/htdocs/luci-static/resources/view/status/include/10_system.js
-@@ -25,14 +25,26 @@ return baseclass.extend({
+@@ -25,14 +25,27 @@ return baseclass.extend({
  		return Promise.all([
  			L.resolveDefault(callSystemBoard(), {}),
  			L.resolveDefault(callSystemInfo(), {}),
@@ -11,6 +11,7 @@
 +			  for (var i = 0; i < lines.length; i++) {
 +				  if (lines[i].match(/%/)) {
 +					var stat = lines[i].split(/\s+/);
++					stats['min'] = stat[0];
 +					stats['avg'] = stat[1];
 +					stats['max'] = stat[2];
 +					return stats;
@@ -35,7 +36,7 @@
  				systeminfo.load[2] / 65535.0
 -			) : null
 +			) : null,
-+			_('NSS Load'),         (L.isObject(nssinfo) ? 'Avg: %s Max: %s'.format(nssinfo.avg, nssinfo.max) : null)
++			_('NSS Load'),         (L.isObject(nssinfo) ? 'Min: %s Avg: %s Max: %s'.format(nssinfo.min, nssinfo.avg, nssinfo.max) : null)
  		];
  
  		var table = E('table', { 'class': 'table' });
