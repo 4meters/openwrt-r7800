@@ -1,3 +1,5 @@
+Notes: copy the VHT and NSS patches into your luci packages manually. 
+
 ![OpenWrt logo](include/logo.png)
 
 OpenWrt Project is a Linux operating system targeting embedded devices. Instead
