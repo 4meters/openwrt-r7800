@@ -43,12 +43,14 @@ jobs:
         cd openwrt-r7800
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        cp ./.github/.config .config
+        cp ./.github/.config ./.config
 
     - name: Build the firmware image
       id: compile
       run: |
-        IGNORE_ERRORS=m make -j$(($(nproc)+1)) || IGNORE_ERRORS=m make -j1 V=s
+        make defconfig
+        make download -j$(nproc)
+        IGNORE_ERRORS=m make -j$(nproc) world || IGNORE_ERRORS=m make -j1 world V=s
 
     - name: Organize files
       run: |
