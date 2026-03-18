@@ -53,8 +53,10 @@ jobs:
 
     - name: Organize files
       run: |
-        tar -zcvf All_Packages-${{ env.OPENWRT_DEVICE_MODEL }}-NSS.tar.gz ./openwrt-r7800/bin/packages
-        tar -zcvf All_Firmwares-${{ env.OPENWRT_DEVICE_MODEL }}-NSS.tar.gz ./openwrt-r7800/bin/targets
+        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-factory.img ./openwrt-ipq806x-generic-netgear_r7800-NSS-squashfs-factory.img
+        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-factory.img ./openwrt-ipq806x-generic-netgear_r7800-NSS-squashfs-sysupgrade.bin
+        tar -zcvf All_Packages-${{ env.OPENWRT_DEVICE_MODEL }}-NSS.tar.gz ./openwrt-r7800/bin/packages ./openwrt-r7800/bin/targets/ipq806x/generic/packages
+        tar -zcvf All_Firmwares-${{ env.OPENWRT_DEVICE_MODEL }}-NSS.tar.gz ./openwrt-r7800/bin/targets/
 
     - name: Generate release Release Tag
       id: snapshottag
