@@ -54,8 +54,8 @@ jobs:
     - name: Organize files
       run: |
         cd openwrt-r7800
-        tar -zcvf All_Packages.tar.gz ./bin/packages
-        tar -zcvf All_Firmwares.tar.gz ./bin/targets
+        tar -zcvf All_Packages-$OPENWRT_DEVICE_MODEL-NSS.tar.gz ./bin/packages
+        tar -zcvf All_Firmwares-$OPENWRT_DEVICE_MODEL-NSS.tar.gz ./bin/targets
 
     - name: Generate release Release Tag
       id: snapshottag
