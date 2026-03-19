@@ -54,9 +54,9 @@ jobs:
     - name: Organize files
       run: |
         cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-factory.img ./openwrt-ipq806x-generic-netgear_r7800-NSS-squashfs-factory.img
-        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-factory.img ./openwrt-ipq806x-generic-netgear_r7800-NSS-squashfs-sysupgrade.bin
+        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.img ./openwrt-ipq806x-generic-netgear_r7800-NSS-squashfs-sysupgrade.bin
         tar -zcvf All_Packages-${{ env.OPENWRT_DEVICE_MODEL }}-NSS.tar.gz ./openwrt-r7800/bin/packages ./openwrt-r7800/bin/targets/ipq806x/generic/packages
-        tar -zcvf All_Firmwares-${{ env.OPENWRT_DEVICE_MODEL }}-NSS.tar.gz ./openwrt-r7800/bin/targets/
+        tar -zcvf All_Files-${{ env.OPENWRT_DEVICE_MODEL }}-NSS.tar.gz ./openwrt-r7800/bin
 
     - name: Generate release Release Tag
       id: snapshottag
@@ -70,8 +70,10 @@ jobs:
       with:
         tag_name: ${{ steps.snapshottag.outputs.release_tag }}-${{ env.OPENWRT_DEVICE_MODEL }}
         files: |
+          openwrt-ipq806x-generic-netgear_r7800-NSS-squashfs-factory.img
+          openwrt-ipq806x-generic-netgear_r7800-NSS-squashfs-sysupgrade.bin
           All_Packages-${{ env.OPENWRT_DEVICE_MODEL }}-NSS.tar.gz
-          All_Firmwares-${{ env.OPENWRT_DEVICE_MODEL }}-NSS.tar.gz
+          All_Files-${{ env.OPENWRT_DEVICE_MODEL }}-NSS.tar.gz
 
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main
