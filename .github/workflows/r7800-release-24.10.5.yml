@@ -43,17 +43,21 @@ jobs:
         cd openwrt-r7800
         ./scripts/feeds update -a
         ./scripts/feeds install -a
-        cp ./.github/.config .config
+        cp ./.github/.config ./.config
 
     - name: Build the firmware image
       id: compile
       run: |
-        IGNORE_ERRORS=m make -j$(($(nproc)+1)) defconfig download clean world || IGNORE_ERRORS=m make -j1 defconfig download clean world V=s
+        cd openwrt-r7800
+        IGNORE_ERRORS=m make -j$(nproc) || IGNORE_ERRORS=m make -j1 V=s
 
     - name: Organize files
       run: |
-        tar -zcvf All_Packages.tar.gz ./bin/packages
-        tar -zcvf All_Firmwares.tar.gz ./bin/targets
+        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-factory.img ./openwrt-24.10.5-NSS-ipq806x-generic-netgear_r7800-squashfs-factory.img
+        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin ./openwrt-24.10.5-NSS-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin
+        tar -zcvf kmods-openwrt-24.10.5-NSS-${{ env.OPENWRT_DEVICE_MODEL }}.tar.gz \
+          -C ./openwrt-r7800/bin/targets/ipq806x/generic/packages \
+          $(find ./openwrt-r7800/bin/targets/ipq806x/generic/packages -name 'kmod-*.ipk' -printf '%P\n')
 
     - name: Generate release Release Tag
       id: snapshottag
@@ -67,8 +71,9 @@ jobs:
       with:
         tag_name: ${{ steps.snapshottag.outputs.release_tag }}-${{ env.OPENWRT_DEVICE_MODEL }}
         files: |
-          All_Packages-$OPENWRT_DEVICE_MODEL-NSS.tar.gz
-          All_Firmwares-$OPENWRT_DEVICE_MODEL-NSS.tar.gz
+          openwrt-24.10.5-NSS-ipq806x-generic-netgear_r7800-squashfs-factory.img
+          openwrt-24.10.5-NSS-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin
+          kmods-openwrt-24.10.5-NSS-${{ env.OPENWRT_DEVICE_MODEL }}.tar.gz
 
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main
