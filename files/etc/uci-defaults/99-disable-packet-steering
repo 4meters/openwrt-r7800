@@ -1,0 +1,9 @@
+#!/bin/sh
+
+uci -q batch <<EOF
+set network.globals=globals
+set network.globals.packet_steering='0'
+commit network
+EOF
+
+exit 0
