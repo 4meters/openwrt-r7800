@@ -1,10 +1,8 @@
-name: Build Netgear r7800 - release (24.10.5)
+name: Build Netgear r7800 - release (24.10.6)
 
 on:
   repository_dispatch:
   workflow_dispatch:
-    branches:
-      - master
 
 env:
   OPENWRT_DEVICE_MODEL: netgear_r7800
@@ -41,8 +39,11 @@ jobs:
       run: |
         git clone https://github.com/4meters/openwrt-r7800
         cd openwrt-r7800
+        mkdir luci-patches
+        cp -r ./feeds/luci/modules/* ./luci-patches
         ./scripts/feeds update -a
         ./scripts/feeds install -a
+        cp -r ./luci-patches/* ./feeds/luci/modules
         cp ./.github/.config ./.config
 
     - name: Build the firmware image
@@ -53,16 +54,17 @@ jobs:
 
     - name: Organize files
       run: |
-        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-factory.img ./openwrt-24.10.5-NSS-ipq806x-generic-netgear_r7800-squashfs-factory.img
-        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin ./openwrt-24.10.5-NSS-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin
-        tar -zcvf kmods-openwrt-24.10.5-NSS-${{ env.OPENWRT_DEVICE_MODEL }}.tar.gz \
+        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800.manifest ./openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800.manifest
+        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-factory.img ./openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800-squashfs-factory.img
+        cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin ./openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin
+        tar -zcvf kmods-openwrt-24.10.6-NSS-${{ env.OPENWRT_DEVICE_MODEL }}.tar.gz \
           -C ./openwrt-r7800/bin/targets/ipq806x/generic/packages \
           $(find ./openwrt-r7800/bin/targets/ipq806x/generic/packages -name 'kmod-*.ipk' -printf '%P\n')
 
     - name: Generate release Release Tag
       id: snapshottag
       run: |
-        echo "release_tag=24.10.5-nss-release_$(date +"%Y-%m-%d")" >> $GITHUB_OUTPUT
+        echo "release_tag=24.10.6-nss-release_$(date +"%Y-%m-%d")" >> $GITHUB_OUTPUT
 
     - name: Upload release firmware to Release
       uses: softprops/action-gh-release@v2
@@ -71,9 +73,10 @@ jobs:
       with:
         tag_name: ${{ steps.snapshottag.outputs.release_tag }}-${{ env.OPENWRT_DEVICE_MODEL }}
         files: |
-          openwrt-24.10.5-NSS-ipq806x-generic-netgear_r7800-squashfs-factory.img
-          openwrt-24.10.5-NSS-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin
-          kmods-openwrt-24.10.5-NSS-${{ env.OPENWRT_DEVICE_MODEL }}.tar.gz
+          openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800.manifest
+          openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800-squashfs-factory.img
+          openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin
+          kmods-openwrt-24.10.6-NSS-${{ env.OPENWRT_DEVICE_MODEL }}.tar.gz
 
     - name: Delete workflow runs
       uses: Mattraks/delete-workflow-runs@main
