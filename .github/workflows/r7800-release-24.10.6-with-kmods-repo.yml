@@ -37,7 +37,7 @@ jobs:
 
       - name: Download the sources
         run: |
-          git clone https://github.com/4meters/openwrt-r7800
+          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/4meters/openwrt-r7800
           cd openwrt-r7800
           mkdir luci-patches
           cp -r ./feeds/luci/modules/* ./luci-patches
