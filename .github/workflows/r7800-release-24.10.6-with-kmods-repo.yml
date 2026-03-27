@@ -1,0 +1,209 @@
+name: Build Netgear r7800 - release (24.10.6) - with kmods repo
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+
+env:
+  OPENWRT_DEVICE_MODEL: netgear_r7800
+  TZ: UTC
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Initialization environment
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt-get -qq update && sudo apt-get -qq upgrade
+          sudo apt-get -qq install build-essential clang flex bison g++ gawk gcc-multilib g++-multilib gettext git libncurses5-dev libssl-dev python3-setuptools rsync swig unzip zlib1g-dev file wget
+          sudo apt-get -qq autoremove --purge
+          sudo apt-get -qq clean
+          sudo timedatectl set-timezone "$TZ"
+
+      - name: Maximize build disk space
+        uses: easimon/maximize-build-space@master
+        with:
+          remove-dotnet: true
+          remove-android: true
+          remove-haskell: true
+          remove-codeql: true
+          remove-docker-images: true
+
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Download the sources
+        run: |
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/4meters/openwrt-r7800
+          cd openwrt-r7800
+          
+          mkdir luci-patches
+          cp -r ./feeds/luci/modules/* ./luci-patches
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          cp -r ./luci-patches/* ./feeds/luci/modules
+          cp ./.github/.config ./.config
+
+      - name: Add usign public key and uci-default
+        env:
+          USIGN_PUBLIC_KEY: ${{ secrets.USIGN_PUBLIC_KEY }}
+          USIGN_PUBLIC_KEY_ID: ${{ secrets.USIGN_PUBLIC_KEY_ID }}
+        run: |
+          cd openwrt-r7800
+
+          mkdir -p files/etc/opkg/keys
+          echo "$USIGN_PUBLIC_KEY" > files/etc/opkg/keys/$USIGN_PUBLIC_KEY_ID
+          chmod 644 files/etc/opkg/keys/$USIGN_PUBLIC_KEY_ID
+
+          cat << 'EOF' > files/etc/uci-defaults/99-add-kmods-repo
+          #!/bin/sh
+          KERNEL_VER=$(opkg list-installed kernel | awk '{print $3}')
+          FEED_URL="https://4meters.github.io/kmods-r7800-nss/$KERNEL_VER"
+
+          sed -i '/kmods-r7800-nss/d' /etc/opkg/customfeeds.conf
+          echo "src/gz kmods $FEED_URL" >> /etc/opkg/customfeeds.conf
+
+          exit 0
+          EOF
+
+          chmod +x files/etc/uci-defaults/99-add-kmods-repo
+
+      - name: Build the firmware image
+        run: |
+          cd openwrt-r7800
+          IGNORE_ERRORS=m make -j$(nproc) || IGNORE_ERRORS=m make -j1 V=s
+          
+      - name: Pack build outputs
+        run: |
+          tar -czf openwrt-artifacts.tar.gz \
+            openwrt-r7800/bin/targets \
+            openwrt-r7800/staging_dir/host \
+            openwrt-r7800/.github/ipkg-make-index
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-build-r7800
+          path: openwrt-artifacts.tar.gz
+          retention-days: 3
+
+  kmods-repo:
+    needs: build
+    runs-on: ubuntu-latest
+  
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openwrt-build-r7800
+  
+      - name: Extract build artifact
+        run: |
+          tar -xzf openwrt-artifacts.tar.gz
+  
+      - name: Prepare kmods feed + sign
+        env:
+          USIGN_PRIVATE_KEY: ${{ secrets.USIGN_PRIVATE_KEY }}
+        run: |
+          set -e
+  
+          cd openwrt-r7800
+  
+          echo "== Debug: listing packages dir =="
+          ls -l bin/targets/ipq806x/generic/packages/ || exit 1
+  
+          echo "== Debug: preview Packages file =="
+          head -20 bin/targets/ipq806x/generic/packages/Packages || exit 1
+          
+          KERNEL_VER=$(grep -m1 -oP 'kernel \(=\K[^)]+' bin/targets/ipq806x/generic/packages/Packages)
+  
+          if [ -z "$KERNEL_VER" ]; then
+            echo "ERROR: Kernel ABI not found"
+            exit 1
+          fi
+  
+          echo "Kernel ABI: $KERNEL_VER"
+  
+          FEED_DIR=./kmods/$KERNEL_VER
+          mkdir -p "$FEED_DIR"
+  
+          cp bin/targets/ipq806x/generic/packages/kmod-*.ipk "$FEED_DIR/"
+  
+          cd "$FEED_DIR"
+  
+          echo "== Generating Packages index =="
+          sudo ln -s $(which sha256sum) /usr/local/bin/sha256
+          chmod +x "../../.github/ipkg-make-index/ipkg-make-index.sh"
+          "../../.github/ipkg-make-index/ipkg-make-index.sh" . > Packages
+          gzip -k Packages
+  
+          echo "== Writing signing key =="
+          printf "%s" "$USIGN_PRIVATE_KEY" > key-build
+          chmod 600 key-build
+  
+          echo "== Signing Packages =="
+          "../../staging_dir/host/bin/usign" -S -m Packages -s key-build
+          
+          rm key-build
+  
+          echo "== Done =="
+          ls -l
+  
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          keep_files: true
+          personal_token: ${{ secrets.PERSONAL_TOKEN }}
+          publish_dir: ./openwrt-r7800/kmods
+          external_repository: 4meters/kmods-r7800-nss
+          destination_dir: .
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openwrt-build-r7800
+
+      - name: Extract build artifact
+        run: |
+          tar -xzf openwrt-artifacts.tar.gz
+
+      - name: Prepare release files
+        run: |
+          cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800.manifest ./openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800.manifest
+          cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-factory.img ./openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800-squashfs-factory.img
+          cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin ./openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin
+          
+          tar -zcvf kmods-openwrt-24.10.6-NSS-${{ env.OPENWRT_DEVICE_MODEL }}.tar.gz \
+            -C ./openwrt-r7800/bin/targets/ipq806x/generic/packages \
+            $(find ./openwrt-r7800/bin/targets/ipq806x/generic/packages -name 'kmod-*.ipk' -printf '%P\n')
+
+      - name: Generate release tag
+        id: tag
+        run: |
+          echo "tag=24.10.6-nss-release_$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: |
+            openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800.manifest
+            openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800-squashfs-factory.img
+            openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800-squashfs-sysupgrade.bin
+            kmods-openwrt-24.10.6-NSS-${{ env.OPENWRT_DEVICE_MODEL }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cleanup old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 1
+          keep_minimum_runs: 2
