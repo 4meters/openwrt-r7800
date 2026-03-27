@@ -80,32 +80,44 @@ jobs:
           USIGN_PRIVATE_KEY: ${{ secrets.USIGN_PRIVATE_KEY }}
         run: |
           cd openwrt-r7800
+
+          # Debug
+            ls bin/targets/ipq806x/generic/packages/ || exit 1
           
-          # Extract kernel ABI version
-          KERNEL_VER=$(awk '/^Package: kernel/{getline; print $2}' \
-            bin/targets/ipq806x/generic/packages/Packages)
+          # Extract kernel ABI
+          KERNEL_VER=$(grep -A1 '^Package: kernel$' \
+            bin/targets/ipq806x/generic/packages/Packages | \
+            grep Version | awk '{print $2}')
+            
+            if [ -z "$KERNEL_VER" ]; then
+          echo "ERROR: Kernel ABI not found"
+            exit 1
+            fi
           
           echo "Kernel ABI: $KERNEL_VER"
           
           # Prepare feed dir
-          FEED_DIR=./kmods/$KERNEL_VER
-          mkdir -p $FEED_DIR
-          
-          # Copy kmods
-          cp bin/targets/ipq806x/generic/packages/kmod-*.ipk $FEED_DIR/
-          
-          cd $FEED_DIR
-          
-          # Generate index
-          ../../../staging_dir/host/bin/opkg-make-index . > Packages
-          gzip -k Packages
-          
-          # Load private key
-          echo "$USIGN_PRIVATE_KEY" > key-build
-          chmod 600 key-build
-          
-          # Sign Packages
-          ../../../staging_dir/host/bin/usign -S -m Packages -s key-build
+            FEED_DIR=./kmods/$KERNEL_VER
+            mkdir -p $FEED_DIR
+            
+            # Copy kmods
+            cp bin/targets/ipq806x/generic/packages/kmod-*.ipk $FEED_DIR/
+            
+            cd $FEED_DIR
+            
+            # Use absolute TOPDIR
+            TOPDIR=$(realpath ../../)
+            
+            # Generate index
+            $TOPDIR/staging_dir/host/bin/opkg-make-index . > Packages
+            gzip -k Packages
+            
+            # Load private key
+            echo "$USIGN_PRIVATE_KEY" > key-build
+            chmod 600 key-build
+            
+            # Sign
+            $TOPDIR/staging_dir/host/bin/usign -S -m Packages -s key-build
 
       - name: Deploy kmods feed to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
