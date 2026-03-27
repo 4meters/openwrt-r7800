@@ -74,6 +74,24 @@ jobs:
         run: |
           cd openwrt-r7800
           IGNORE_ERRORS=m make -j$(nproc) || IGNORE_ERRORS=m make -j1 V=s
+          
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwrt-build
+          path: |
+            openwrt-r7800/bin/targets/ 
+            openwrt-r7800/staging_dir/host/
+          retention-days: 3
+
+  kmods-repo:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openwrt-build
 
       - name: Prepare kmods feed + sign
         env:
@@ -125,6 +143,15 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./openwrt-r7800/kmods
           destination_dir: kmods-r7800
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: openwrt-build
 
       - name: Organize files
         run: |
