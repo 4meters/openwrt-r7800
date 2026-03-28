@@ -76,11 +76,17 @@ jobs:
           cd openwrt-r7800
           IGNORE_ERRORS=m make -j$(nproc) || IGNORE_ERRORS=m make -j1 V=s
           
+      - name: Pack build outputs
+        run: |
+          tar -czf openwrt-artifacts.tar.gz \
+            openwrt-r7800/bin/targets \
+            openwrt-r7800/staging_dir/host   
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: openwrt-build-r7800
-          path: openwrt-r7800
+          path: openwrt-artifacts.tar.gz
           retention-days: 3
 
   kmods-repo:
@@ -93,6 +99,9 @@ jobs:
         with:
           name: openwrt-build-r7800
 
+      - name: Extract build artifact
+        run: |
+          tar -xzf openwrt-artifacts.tar.gz
       - name: Prepare kmods feed + sign
         env:
           USIGN_PRIVATE_KEY: ${{ secrets.USIGN_PRIVATE_KEY }}
