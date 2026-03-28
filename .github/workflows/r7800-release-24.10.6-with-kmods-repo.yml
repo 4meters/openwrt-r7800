@@ -117,8 +117,8 @@ jobs:
   
           echo "== Debug: preview Packages file =="
           head -20 bin/targets/ipq806x/generic/packages/Packages || exit 1
-  
-          KERNEL_VER=$(grep -A1 '^Package: kernel$' bin/targets/ipq806x/generic/packages/Packages | grep '^Version:' | awk '{print $2}')
+          
+          KERNEL_VER=$(grep -m1 -oP 'kernel \(=\K[^)]+' bin/targets/ipq806x/generic/packages/Packages)
   
           if [ -z "$KERNEL_VER" ]; then
             echo "ERROR: Kernel ABI not found"
@@ -137,7 +137,7 @@ jobs:
           TOPDIR=$(realpath ../../)
   
           echo "== Generating Packages index =="
-          "$TOPDIR/staging_dir/host/bin/opkg-make-index" . > Packages
+          "$TOPDIR/scripts/ipkg-make-index.sh" . > Packages
           gzip -k Packages
   
           echo "== Writing signing key =="
@@ -147,6 +147,8 @@ jobs:
   
           echo "== Signing Packages =="
           "$TOPDIR/staging_dir/host/bin/usign" -S -m Packages -s key-build
+          
+          rm key-build
   
           echo "== Done =="
           ls -l
