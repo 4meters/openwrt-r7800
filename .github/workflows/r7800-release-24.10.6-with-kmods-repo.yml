@@ -155,6 +155,10 @@ jobs:
         with:
           name: openwrt-build-r7800
 
+      - name: Extract build artifact
+        run: |
+          tar -xzf openwrt-artifacts.tar.gz
+
       - name: Prepare release files
         run: |
           cp ./openwrt-r7800/bin/targets/ipq806x/generic/openwrt-ipq806x-generic-netgear_r7800.manifest ./openwrt-24.10.6-NSS-ipq806x-generic-netgear_r7800.manifest
