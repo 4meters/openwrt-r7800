@@ -1,0 +1,29 @@
+on:
+  workflow_run:
+    workflows: ["Build Netgear r7800 - release (24.10.6) - with kmods repo"]
+    types:
+      - completed
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  kmods:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifact (from triggering run)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir artifact
+          cd artifact
+
+          gh run download ${{ github.event.workflow_run.id }} -n openwrt-build-r7800
+
+          ls -l
+
+      - name: Extract build artifact
+        run: |
+          tar -xzf artifact/openwrt-artifacts.tar.gz
