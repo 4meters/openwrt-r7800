@@ -101,6 +101,7 @@ jobs:
   
       - name: Extract build artifact
         run: |
+          echo "ACHTUNG"
           tar -xzf openwrt-artifacts.tar.gz
   
       - name: Prepare kmods feed + sign
