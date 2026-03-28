@@ -37,7 +37,10 @@ jobs:
         run: |
           set -e
           ls
-          tar -xzf artifact/openwrt-build-r7800.tar.gz
+          cd ./artifact
+          unzip ./openwrt-build-r7800.zip
+          cd ..
+          tar -xzf artifact/openwrt-artifacts.tar.gz
 
       - name: Prepare kmods feed + sign
         env:
