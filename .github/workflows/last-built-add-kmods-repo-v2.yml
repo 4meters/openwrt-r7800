@@ -1,6 +1,7 @@
 name: Add kmods repo for last build
 
 on:
+  workflow_dispatch:
   repository_dispatch:
   workflow_run:
     workflows: ["Build Netgear r7800 - release (24.10.6) - with kmods repo"]
