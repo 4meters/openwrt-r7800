@@ -1,0 +1,95 @@
+name: Add kmods repo for last build
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+
+env:
+  OPENWRT_DEVICE_MODEL: netgear_r7800
+  TZ: UTC
+
+permissions:
+  actions: read
+  contents: write   # needed for gh-pages deploy
+
+jobs:
+  kmods-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build artifact (from triggering run)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+
+          mkdir artifact
+          cd artifact
+
+          echo "== Downloading artifact from run: 23684291798 =="
+
+          gh run download 23684291798 -n openwrt-build-r7800
+
+          echo "== Downloaded files =="
+          ls -l
+
+      - name: Extract build artifact
+        run: |
+          set -e
+          tar -xzf artifact/openwrt-artifacts.tar.gz
+
+      - name: Prepare kmods feed + sign
+        env:
+          USIGN_PRIVATE_KEY: ${{ secrets.USIGN_PRIVATE_KEY }}
+        run: |
+          set -e
+
+          cd openwrt-r7800
+
+          echo "== Debug: listing packages dir =="
+          ls -l bin/targets/ipq806x/generic/packages/ || exit 1
+
+          echo "== Debug: preview Packages file =="
+          head -20 bin/targets/ipq806x/generic/packages/Packages || exit 1
+
+          # ✅ Stable kernel ABI extraction
+          KERNEL_VER=$(grep -m1 -oP 'kernel \(=\K[^)]+' bin/targets/ipq806x/generic/packages/Packages)
+
+          if [ -z "$KERNEL_VER" ]; then
+            echo "ERROR: Kernel ABI not found"
+            exit 1
+          fi
+
+          echo "Kernel ABI: $KERNEL_VER"
+
+          FEED_DIR=./kmods/$KERNEL_VER
+          mkdir -p "$FEED_DIR"
+
+          cp bin/targets/ipq806x/generic/packages/kmod-*.ipk "$FEED_DIR/"
+
+          cd "$FEED_DIR"
+
+          TOPDIR=$(realpath ../../)
+
+          echo "== Generating Packages index =="
+          "$TOPDIR/staging_dir/host/bin/opkg-make-index" . > Packages
+          gzip -k Packages
+
+          echo "== Writing signing key =="
+          printf "%s" "$USIGN_PRIVATE_KEY" > key-build
+          chmod 600 key-build
+
+          echo "== Signing Packages =="
+          "$TOPDIR/staging_dir/host/bin/usign" -S -m Packages -s key-build
+
+          rm key-build
+          
+          echo "== Done =="
+          ls -l
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./openwrt-r7800/kmods
+          destination_dir: kmods-r7800
