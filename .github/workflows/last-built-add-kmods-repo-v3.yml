@@ -36,6 +36,7 @@ jobs:
       - name: Extract build artifact
         run: |
           set -e
+          ls
           tar -xzf artifact/openwrt-build-r7800.tar.gz
 
       - name: Prepare kmods feed + sign
