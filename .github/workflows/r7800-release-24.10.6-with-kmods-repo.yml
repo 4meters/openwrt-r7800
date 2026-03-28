@@ -102,7 +102,7 @@ jobs:
           ls bin/targets/ipq806x/generic/packages/ || exit 1
 
           # Extract kernel ABI
-          KERNEL_VER=$(awk '/^Package: kernel/{getline; print $2}' \
+          KERNEL_VER=$(awk '/^Package: kernel$/ {found=1} found && /^Version:/ {print $2; exit}'
             bin/targets/ipq806x/generic/packages/Packages)
 
           if [ -z "$KERNEL_VER" ]; then
