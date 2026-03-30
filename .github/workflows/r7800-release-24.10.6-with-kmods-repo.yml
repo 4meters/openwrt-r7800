@@ -61,7 +61,7 @@ jobs:
           cat << 'EOF' > files/etc/uci-defaults/99-add-kmods-repo
           #!/bin/sh
           KERNEL_VER=$(opkg list-installed kernel | awk '{print $3}')
-          FEED_URL="https://4meters.github.io/repo/kmods-r7800-nss/$KERNEL_VER"
+          FEED_URL="https://4meters.github.io/kmods-r7800-nss/$KERNEL_VER"
 
           sed -i '/kmods-r7800-nss/d' /etc/opkg/customfeeds.conf
           echo "src/gz kmods $FEED_URL" >> /etc/opkg/customfeeds.conf
@@ -80,7 +80,8 @@ jobs:
         run: |
           tar -czf openwrt-artifacts.tar.gz \
             openwrt-r7800/bin/targets \
-            openwrt-r7800/staging_dir/host   
+            openwrt-r7800/staging_dir/host \
+            openwrt-r7800/.github/ipkg-make-index
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -101,7 +102,6 @@ jobs:
   
       - name: Extract build artifact
         run: |
-          echo "ACHTUNG"
           tar -xzf openwrt-artifacts.tar.gz
   
       - name: Prepare kmods feed + sign
@@ -134,10 +134,10 @@ jobs:
   
           cd "$FEED_DIR"
   
-          TOPDIR=$(realpath ../../)
-  
           echo "== Generating Packages index =="
-          "$TOPDIR/scripts/ipkg-make-index.sh" . > Packages
+          sudo ln -s $(which sha256sum) /usr/local/bin/sha256
+          chmod +x "../../.github/ipkg-make-index/ipkg-make-index.sh"
+          "../../.github/ipkg-make-index/ipkg-make-index.sh" . > Packages
           gzip -k Packages
   
           echo "== Writing signing key =="
@@ -146,7 +146,7 @@ jobs:
           chmod 600 key-build
   
           echo "== Signing Packages =="
-          "$TOPDIR/staging_dir/host/bin/usign" -S -m Packages -s key-build
+          "../../staging_dir/host/bin/usign" -S -m Packages -s key-build
           
           rm key-build
   
@@ -156,9 +156,11 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          keep_files: true
+          personal_token: ${{ secrets.PERSONAL_TOKEN }}
           publish_dir: ./openwrt-r7800/kmods
-          destination_dir: kmods-r7800
+          external_repository: 4meters/kmods-r7800-nss
+          destination_dir: .
 
   release:
     needs: build
