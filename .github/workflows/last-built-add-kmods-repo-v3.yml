@@ -86,7 +86,7 @@ jobs:
           TOPDIR=$(realpath ../../)
 
           echo "== Generating Packages index =="
-          alias sha256=sha256sum
+          sudo ln -s $(which sha256sum) /usr/local/bin/sha256
           chmod +x "$TOPDIR/.github/ipkg-make-index/ipkg-make-index.sh"
           "$TOPDIR/.github/ipkg-make-index/ipkg-make-index.sh" . > Packages
           gzip -k Packages
