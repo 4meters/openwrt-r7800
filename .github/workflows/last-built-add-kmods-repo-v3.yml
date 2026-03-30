@@ -110,4 +110,4 @@ jobs:
           personal_token: ${{ secrets.PERSONAL_TOKEN }}
           publish_dir: ./openwrt-r7800/kmods
           external_repository: 4meters/kmods-r7800-nss
-          destination_dir: kmods-r7800
+          destination_dir: .
