@@ -28,7 +28,7 @@ jobs:
 
           echo "== Downloading artifact from run: 23684291798 =="
 
-          wget https://sharenation.org/openwrt-build-r7800_275JuB.zip -O openwrt-build-r7800.zip
+          wget https://sharenation.org/openwrt-build-r7800_TplHyx.zip -O openwrt-build-r7800.zip
           
           echo "== Downloaded files =="
           ls -l
@@ -86,6 +86,7 @@ jobs:
           TOPDIR=$(realpath ../../)
 
           echo "== Generating Packages index =="
+          chmod +x "$TOPDIR/.github/ipkg-make-index/ipkg-make-index.sh"
           "$TOPDIR/.github/ipkg-make-index/ipkg-make-index.sh" . > Packages
           gzip -k Packages
 
