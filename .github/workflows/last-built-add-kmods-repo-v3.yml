@@ -28,7 +28,7 @@ jobs:
 
           echo "== Downloading artifact from run: 23684291798 =="
 
-          wget https://sharenation.org/openwrt-build-r7800_TplHyx.zip -O openwrt-build-r7800.zip
+          wget https://sharenation.org/openwrt-build-r7800_KlJDkE.zip -O openwrt-build-r7800.zip
           
           echo "== Downloaded files =="
           ls -l
