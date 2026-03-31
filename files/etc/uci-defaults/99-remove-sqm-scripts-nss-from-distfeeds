@@ -1,0 +1,7 @@
+#!/bin/sh
+
+sed -i '/sqm_scripts_nss/d' /etc/opkg/distfeeds.conf
+
+exit 0
+
+# remove sqm scripts nss entry from distfeeds.conf to avoid errors on opkg update
