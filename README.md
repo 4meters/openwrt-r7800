@@ -1,5 +1,27 @@
 Notes: copy the VHT and NSS patches into your luci packages manually. 
 
+- updated patches to 24.10.6
+- added uci-default disable packet steering - because after factory reset it will enable and we don't want it 
+- all additional kmods available to download directly from LuCI
+- huawei e3372 support kmods included in firmware
+- mwan3
+- sqm-scripts-nss source repo updated ([nihilt/sqm-scripts-nss](https://github.com/nihilt/sqm-scripts-nss))
+- list of packages included in firmware is in release .manifest file
+
+## How to build
+1. git clone https://github.com/4meters/openwrt-r7800
+2. cd openwrt-r7800
+3. mkdir luci-patches
+4. cp -r ./feeds/luci/modules/* ./luci-patches
+5. ./scripts/feeds update -a
+6. ./scripts/feeds install -a
+7. cp -r ./luci-patches/* ./feeds/luci/modules
+8. cp ./.github/.config ./.config
+9. make
+
+## Download
+https://github.com/4meters/openwrt-r7800/releases/tag/24.10.6-nss-release_2026-03-23-netgear_r7800
+
 ![OpenWrt logo](include/logo.png)
 
 OpenWrt Project is a Linux operating system targeting embedded devices. Instead
