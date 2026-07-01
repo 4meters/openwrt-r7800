@@ -20,7 +20,8 @@ Notes: copy the VHT and NSS patches into your luci packages manually.
 9. make
 
 ## Download
-https://github.com/4meters/openwrt-r7800/releases/tag/24.10.6-nss-release_2026-03-23-netgear_r7800
+https://github.com/4meters/openwrt-r7800-nss/releases/tag/24.10.6-nss-release_2026-04-08
+
 
 ![OpenWrt logo](include/logo.png)
 
